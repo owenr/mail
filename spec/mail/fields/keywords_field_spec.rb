@@ -39,11 +39,6 @@ describe Mail::KeywordsField do
       expect(k.keywords).to eq ['these, are keywords', 'so there (This is an irrelevant comment)']
     end
     
-    it "should handle comments" do
-      k = Mail::KeywordsField.new('"these, are keywords", so there (This is an irrelevant comment)')
-      expect(k.keywords).to eq ['these, are keywords', 'so there (This is an irrelevant comment)']
-    end
-    
     it "should handle comments in quotes" do
       k = Mail::KeywordsField.new('"these, are keywords (another comment to be ignored)", so there (This is an irrelevant comment)')
       expect(k.keywords).to eq ['these, are keywords (another comment to be ignored)', 'so there (This is an irrelevant comment)']
