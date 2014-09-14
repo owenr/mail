@@ -156,7 +156,7 @@ describe Mail::MimeVersionField do
       expect(t.encoded).to eq "Mime-Version: 1.0\r\n"
     end
 
-    it "should provide an decoded value" do
+    it "should provide a decoded value" do
       t = Mail::MimeVersionField.new('1.0 (This is a comment)')
       expect(t.decoded).to eq '1.0'
     end

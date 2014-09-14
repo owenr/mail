@@ -38,7 +38,7 @@ describe Mail::CommonField do
       expect(field.value).to eq value
     end
 
-    it "should wrap an encoded at 60 characters" do
+    it "should wrap an encoded string at 60 characters" do
       value = "かきくけこ かきくけこ かきくけこ かきくけこ かきくけこ かきくけこ かきくけこ かきくけこ かきくけこ"
       if RUBY_VERSION < '1.9'
         $KCODE = 'u'
@@ -69,7 +69,7 @@ describe Mail::CommonField do
     
   end
 
-  it "does not strip out content that looks identitcal to the field name" do
+  it "should not strip out content that looks identical to the field name" do
     field = Mail::SubjectField.new("Subject: Subject: for your approval")
     expect(field.decoded).to eq("Subject: for your approval")
   end

@@ -30,7 +30,7 @@ describe Mail::DateField do
       expect(Mail::DateField.new("12 Aug 2009 00:00:02 GMT").date_time.class).to eq DateTime
     end
 
-    it "should mix in the CommonAddress module" do
+    it "should mix in the CommonDate module" do
       expect(Mail::DateField.included_modules).to include(Mail::CommonDate) 
     end
 
@@ -53,12 +53,12 @@ describe Mail::DateField do
       expect(t.date_time).not_to be_nil
     end
     
-    it "should allow us to encode an date field" do
+    it "should allow us to encode a date field" do
       field = Mail::DateField.new('12 Aug 2009 00:00:02 GMT')
       expect(field.encoded).to eq "Date: Wed, 12 Aug 2009 00:00:02 +0000\r\n"
     end
     
-    it "should allow us to decode an address field" do
+    it "should allow us to decode a date field" do
       field = Mail::DateField.new('12 Aug 2009 00:00:02 GMT')
       expect(field.decoded).to eq "Wed, 12 Aug 2009 00:00:02 +0000"
     end

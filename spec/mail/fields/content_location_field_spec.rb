@@ -36,7 +36,7 @@ describe Mail::ContentLocationField do
 
   describe "parsing the value" do
     
-    it "should return an encoding string unquoted" do
+    it "should return a filename unquoted" do
       t = Mail::ContentLocationField.new('"A quoted filename.jpg"')
       expect(t.location).to eq 'A quoted filename.jpg'
     end

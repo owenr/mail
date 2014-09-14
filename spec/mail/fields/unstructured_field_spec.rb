@@ -37,7 +37,7 @@ describe Mail::UnstructuredField do
       @field = Mail::UnstructuredField.new("Subject", "Hello Frank")
     end
 
-    it "should provide a to_s function that returns the field name and value" do
+    it "should provide a to_s function that returns the field value" do
       expect(@field.to_s).to eq "Hello Frank"
     end
 
@@ -65,7 +65,7 @@ describe Mail::UnstructuredField do
       expect(@field.encoded).to eq "Subject: test\r\n"
     end
 
-    it "should give an decoded value ready to insert into an email" do
+    it "should give a decoded value" do
       expect(@field.decoded).to eq "Hello Frank"
     end
 
@@ -187,7 +187,7 @@ describe Mail::UnstructuredField do
   end
 
   describe "encoding non QP safe chars" do
-    it "should encode an ascii string that has carriage returns if asked to" do
+    it "should encode an ascii string that has line feeds if asked to" do
       result = "Subject: =0Aasdf=0A\r\n"
       @field = Mail::UnstructuredField.new("Subject", "\nasdf\n")
       expect(@field.encoded).to eq result

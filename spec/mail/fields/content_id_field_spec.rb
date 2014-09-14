@@ -6,11 +6,11 @@ describe Mail::ContentIdField do
   # In constructing a high-level user agent, it may be desirable to allow
   # one body to make reference to another.  Accordingly, bodies may be
   # labelled using the "Content-ID" header field, which is syntactically
-  # identical to the "Content-ID" header field:
+  # identical to the "Message-ID" header field:
   #
   #   id := "Content-ID" ":" msg-id
   #
-  # Like the Content-ID values, Content-ID values must be generated to be
+  # Like the Message-ID values, Content-ID values must be generated to be
   # world-unique.
   #
   # The Content-ID value may be used for uniquely identifying MIME
@@ -65,16 +65,16 @@ describe Mail::ContentIdField do
 
   end
   
-  describe "ensuring only one message ID" do
+  describe "ensuring only one content ID" do
 
-    it "should not accept a string with multiple message IDs but only return the first" do
+    it "should not accept a string with multiple content IDs but only return the first" do
       m = Mail::ContentIdField.new('<1234@test.lindsaar.net> <4567@test.lindsaar.net>')
       expect(m.name).to eq 'Content-ID'
       expect(m.to_s).to eq '<1234@test.lindsaar.net>'
       expect(m.content_id).to eq '1234@test.lindsaar.net'
     end
 
-    it "should change the message id if given a new message id" do
+    it "should change the content id if given a new message id" do
       m = Mail::ContentIdField.new('<1234@test.lindsaar.net>')
       expect(m.to_s).to eq '<1234@test.lindsaar.net>'
       m.value = '<4567@test.lindsaar.net>'
@@ -101,13 +101,13 @@ describe Mail::ContentIdField do
     end
   end
 
-  describe "generating a message id" do
-    it "should generate a message ID if it has no value" do
+  describe "generating a content id" do
+    it "should generate a content ID if it has no value" do
       m = Mail::ContentIdField.new
       expect(m.content_id).not_to be_blank
     end
     
-    it "should generate a random message ID" do
+    it "should generate a random content ID" do
       m = Mail::ContentIdField.new
       1.upto(100) do
         expect(m.content_id).not_to eq(Mail::ContentIdField.new.content_id)

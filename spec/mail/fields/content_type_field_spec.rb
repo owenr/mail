@@ -117,7 +117,7 @@ describe Mail::ContentTypeField do
       expect(c.decoded).to eq 'text/plain; example="foo bar"'
     end
 
-    it "should render " do
+    it "should render main and sub types" do
       c = Mail::ContentTypeField.new('message/delivery-status')
       expect(c.main_type).to eq 'message'
       expect(c.sub_type).to eq 'delivery-status'
@@ -171,7 +171,7 @@ describe Mail::ContentTypeField do
       expect(c.parameters).to eql({"charset" => 'US-ASCII', "format" => 'flowed'})
     end
 
-    it "should return boundry parameters" do
+    it "should return boundary parameters" do
       c = Mail::ContentTypeField.new('multipart/mixed; boundary=Apple-Mail-13-196941151')
       expect(c.parameters).to eql({"boundary" => 'Apple-Mail-13-196941151'})
     end
@@ -520,7 +520,7 @@ describe Mail::ContentTypeField do
       expect(c.parameters).to eql({"charset" => 'utf-8'})
     end
 
-    it "should handle 'text/plain; charset=utf-8'" do
+    it "should handle 'text/plain; charset=X-UNKNOWN'" do
       string = %q{text/plain; charset=X-UNKNOWN}
       c = Mail::ContentTypeField.new(string)
       expect(c.content_type).to eq 'text/plain'
@@ -592,7 +592,7 @@ describe Mail::ContentTypeField do
       expect(c.parameters).to eql({"name" => "IM 006.jpg"})
     end
 
-    it "should handle 'unknown/unknown'" do
+    it "should handle 'unknown/unknown' with parameters" do
       string = %(unknown/unknown; charset=iso-8859-1; name=IMSTP19.gif)
       c = Mail::ContentTypeField.new(string)
       expect(c.content_type).to eq 'unknown/unknown'
@@ -656,7 +656,7 @@ describe Mail::ContentTypeField do
 
   end
 
-  describe "handling badly formated content-type fields" do
+  describe "handling badly formatted content-type fields" do
 
     it "should handle missing sub-type on a text content type" do
       c = Mail::ContentTypeField.new('Content-Type: text')

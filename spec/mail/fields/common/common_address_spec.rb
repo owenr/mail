@@ -69,7 +69,7 @@ describe "Mail::CommonAddress" do
         expect(field.encoded).to eq "To: mikel@test.lindsaar.net\r\n"
       end
 
-      context "a unquoted multi-byte address is given" do
+      context "an unquoted multi-byte address is given" do
         let(:given_value) { 'みける <mikel@test.lindsaar.net>' }
 
         it "should allow you to set an unquoted, multi-byte address value after initialization" do
@@ -89,7 +89,7 @@ describe "Mail::CommonAddress" do
       context "a quoted multi-byte address is given" do
         let(:given_value) { '"みける" <mikel@test.lindsaar.net>' }
 
-        it "should allow you to set an quoted, multi-byte address value after initialization" do
+        it "should allow you to set a quoted, multi-byte address value after initialization" do
           expected_result = "To: =?UTF-8?B?44G/44GR44KL?= <mikel@test.lindsaar.net>\r\n"
           field = Mail::ToField.new("")
           field.value = given_value
@@ -111,7 +111,7 @@ describe "Mail::CommonAddress" do
         expect(field.addresses).to eq ["mikel@test.lindsaar.net"]
       end
 
-      context "a unquoted multi-byte address is given" do
+      context "an unquoted multi-byte address is given" do
         let(:given_value) { 'みける <mikel@test.lindsaar.net>' }
 
         context "initialized with an empty string" do
@@ -138,7 +138,7 @@ describe "Mail::CommonAddress" do
           end
         end
 
-        context "initialized with an multi-byte address" do
+        context "initialized with a multi-byte address" do
           it "should allow you to append a quoted, multi-byte address value" do
             expected_result = "To: =?UTF-8?B?44Of44Kx44Or?= <test2@example.com>, \r\n =?UTF-8?B?44G/44GR44KL?= <mikel@test.lindsaar.net>\r\n"
             field = Mail::ToField.new("ミケル <test2@example.com>")
@@ -181,7 +181,7 @@ describe "Mail::CommonAddress" do
           end
         end
 
-        context "initialized with an multi-byte address" do
+        context "initialized with a multi-byte address" do
           it "should allow you to append a quoted, multi-byte address value" do
             expected_result = "To: =?UTF-8?B?44Of44Kx44Or?= <test2@example.com>, \r\n =?UTF-8?B?44G/44GR44KL?= <mikel@test.lindsaar.net>\r\n"
             field = Mail::ToField.new("ミケル <test2@example.com>")

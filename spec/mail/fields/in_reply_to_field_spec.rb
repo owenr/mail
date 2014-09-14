@@ -63,7 +63,7 @@ describe Mail::InReplyToField do
     
   end
 
-  describe "handlign multiple message ids" do
+  describe "handling multiple message ids" do
     it "should handle many message IDs" do
       t = Mail::InReplyToField.new('<1234@test.lindsaar.net> <4567@test.lindsaar.net>')
       expect(t.name).to eq 'In-Reply-To'
