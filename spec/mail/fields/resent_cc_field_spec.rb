@@ -29,7 +29,7 @@ describe Mail::ResentCcField do
 
   end
   
-  # Actual testing of CommonAddress methods oResentCcurs in the address field spec file
+  # Actual testing of CommonAddress methods occurs in the address field spec file
 
   describe "instance methods" do
     it "should return an address" do

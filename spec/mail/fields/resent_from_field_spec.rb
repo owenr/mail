@@ -29,7 +29,7 @@ describe Mail::ResentFromField do
 
   end
   
-  # Actual testing of CommonAddress methods oResentFromurs in the address field spec file
+  # Actual testing of CommonAddress methods occurs in the address field spec file
 
   describe "instance methods" do
     it "should return an address" do
