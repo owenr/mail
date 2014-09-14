@@ -43,7 +43,7 @@ describe Mail::StructuredField do
     
     it "should return '' on to_s if there is no value" do
       @field.value = nil
-      expect(@field.encoded).to eq ''
+      expect(@field.to_s).to eq ''
     end
     
     it "should give an encoded value ready to insert into an email" do

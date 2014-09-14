@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Mail::CommonAddress do
+describe Mail::CommonDate do
   
   describe "encoding and decoding fields" do
     

@@ -38,7 +38,7 @@ describe Mail::UnstructuredField do
     end
 
     it "should provide a to_s function that returns the field name and value" do
-      expect(@field.value).to eq "Hello Frank"
+      expect(@field.to_s).to eq "Hello Frank"
     end
 
     it "should return '' on to_s if there is no value" do

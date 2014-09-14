@@ -271,7 +271,7 @@ describe Mail::ContentTypeField do
     end
 
     it "should handle 'image/jpeg;'" do
-      string = %q{image/jpeg}
+      string = %q{image/jpeg;}
       c = Mail::ContentTypeField.new(string)
       expect(c.content_type).to eq 'image/jpeg'
       expect(c.main_type).to eq 'image'
