@@ -114,11 +114,11 @@ module Mail
     def initialize(name, value = nil, charset = 'utf-8')
       case
       when name.index(COLON)            # Field.new("field-name: field data")
-        @charset = value.blank? ? charset : value
+        @charset = Utilities.blank?(value) ? charset : value
         @name = name[FIELD_PREFIX]
         @raw_value = name
         @value = nil
-      when value.blank?                 # Field.new("field-name")
+      when Utilities.blank?(value)   # Field.new("field-name")
         @name = name
         @value = nil
         @raw_value = nil
@@ -168,14 +168,18 @@ module Mail
     end
 
     def same( other )
+      return false unless other.kind_of?(self.class)
       match_to_s(other.name, self.name)
+    end
+
+    def ==( other )
+      return false unless other.kind_of?(self.class)
+      match_to_s(other.name, self.name) && match_to_s(other.value, self.value)
     end
 
     def responsible_for?( val )
       name.to_s.casecmp(val.to_s) == 0
     end
-
-    alias_method :==, :same
 
     def <=>( other )
       self.field_order_id <=> other.field_order_id
@@ -191,6 +195,16 @@ module Mail
 
     def method_missing(name, *args, &block)
       field.send(name, *args, &block)
+    end
+
+    if RUBY_VERSION >= '1.9.2'
+      def respond_to_missing?(method_name, include_private)
+        field.respond_to?(method_name, include_private) || super
+      end
+    else
+      def respond_to?(method_name, include_private = false)
+        field.respond_to?(method_name, include_private) || super
+      end
     end
 
     FIELD_ORDER = %w[ return-path received

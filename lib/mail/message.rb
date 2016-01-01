@@ -1415,7 +1415,7 @@ module Mail
     end
 
     def has_content_transfer_encoding?
-      header[:content_transfer_encoding] && header[:content_transfer_encoding].errors.blank?
+      header[:content_transfer_encoding] && Utilities.blank?(header[:content_transfer_encoding].errors)
     end
 
     def has_transfer_encoding? # :nodoc:
@@ -1669,6 +1669,8 @@ module Mail
     def html_part=(msg)
       # Assign the html part and set multipart/alternative if there's a text part.
       if msg
+        msg = Mail::Part.new(:body => msg) unless msg.kind_of?(Mail::Message)
+
         @html_part = msg
         @html_part.content_type = 'text/html' unless @html_part.has_content_type?
         add_multipart_alternate_header if text_part
@@ -1691,6 +1693,8 @@ module Mail
     def text_part=(msg)
       # Assign the text part and set multipart/alternative if there's an html part.
       if msg
+        msg = Mail::Part.new(:body => msg) unless msg.kind_of?(Mail::Message)
+
         @text_part = msg
         @text_part.content_type = 'text/plain' unless @text_part.has_content_type?
         add_multipart_alternate_header if html_part
@@ -1709,7 +1713,7 @@ module Mail
 
     # Adds a part to the parts list or creates the part list
     def add_part(part)
-      if !body.multipart? && !self.body.decoded.blank?
+      if !body.multipart? && !Utilities.blank?(self.body.decoded)
         @text_part = Mail::Part.new('Content-Type: text/plain;')
         @text_part.body = body.decoded
         self.body << @text_part
@@ -1765,14 +1769,17 @@ module Mail
     #
     # See also #attachments
     def add_file(values)
-      convert_to_multipart unless self.multipart? || self.body.decoded.blank?
+      convert_to_multipart unless self.multipart? || Utilities.blank?(self.body.decoded)
       add_multipart_mixed_header
       if values.is_a?(String)
         basename = File.basename(values)
         filedata = File.open(values, 'rb') { |f| f.read }
       else
         basename = values[:filename]
-        filedata = values[:content] || File.open(values[:filename], 'rb') { |f| f.read }
+        filedata = values
+        unless filedata[:content]
+          filedata = values.merge(:content=>File.open(values[:filename], 'rb') { |f| f.read })
+        end
       end
       self.attachments[basename] = filedata
     end
@@ -1857,7 +1864,7 @@ module Mail
         case
         when k == 'delivery_handler'
           begin
-            m.delivery_handler = Object.const_get(v) unless v.blank?
+            m.delivery_handler = Object.const_get(v) unless Utilities.blank?(v)
           rescue NameError
           end
         when k == 'transport_encoding'
@@ -1987,7 +1994,7 @@ module Mail
 
     def raw_source=(value)
       value = value.dup.force_encoding(Encoding::BINARY) if RUBY_VERSION >= "1.9.1"
-      @raw_source = value.to_crlf
+      @raw_source = ::Mail::Utilities.to_crlf(value)
     end
 
     # see comments to body=. We take data and process it lazily
@@ -2020,7 +2027,7 @@ module Mail
       raw_string = raw_source.to_s
       if match_data = raw_source.to_s.match(/\AFrom\s(#{TEXT}+)#{CRLF}/m)
         set_envelope(match_data[1])
-        self.raw_source = raw_string.sub(match_data[0], "") 
+        self.raw_source = raw_string.sub(match_data[0], "")
       end
     end
 
@@ -2046,7 +2053,7 @@ module Mail
       add_required_message_fields
       add_multipart_mixed_header    if body.multipart?
       add_content_type              unless has_content_type?
-      add_charset                   unless has_charset?
+      add_charset                   if text? && !has_charset?
       add_content_transfer_encoding unless has_content_transfer_encoding?
     end
 
@@ -2146,20 +2153,7 @@ module Mail
     end
 
     def decode_body_as_text
-      body_text = decode_body
-      if charset
-        if RUBY_VERSION < '1.9'
-          require 'iconv'
-          return Iconv.conv("UTF-8//TRANSLIT//IGNORE", charset, body_text)
-        else
-          if encoding = Encoding.find(charset) rescue nil
-            body_text.force_encoding(encoding)
-            return body_text.encode(Encoding::UTF_8, :undef => :replace, :invalid => :replace, :replace => '')
-          end
-        end
-      end
-      body_text
+      Encodings.transcode_charset decode_body, charset, 'UTF-8'
     end
-
   end
 end
