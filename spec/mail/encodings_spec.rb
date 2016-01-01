@@ -166,6 +166,12 @@ describe Mail::Encodings do
       expect(Mail::Encodings.value_decode(string)).to eq(result)
     end
 
+    it "should collapse adjacent words with multiple encodings on one line seperated by non-spaces" do
+      string = "Re:[=?iso-2022-jp?B?GyRCJTAlayE8JV0lcyEmJTglYyVRJXMzdDwwMnEbKEI=?=\n =?iso-2022-jp?B?GyRCPFIbKEI=?=] =?iso-2022-jp?B?GyRCSlY/LiEnGyhC?=\n  =?iso-2022-jp?B?GyRCIVolMCVrITwlXSVzIVskKkxkJCQ5ZyRvJDsbKEI=?=\n =?iso-2022-jp?B?GyRCJE43byRLJEQkJCRGIUolaiUvJSglOSVIGyhC?=#1056273\n =?iso-2022-jp?B?GyRCIUsbKEI=?="
+      result = "Re:[グルーポン・ジャパン株式会社] 返信：【グルーポン】お問い合わせの件について（リクエスト#1056273\n ）"
+      expect(Mail::Encodings.value_decode(string)).to eq(result)
+    end
+
     it "should decode a blank string" do
       expect(Mail::Encodings.value_decode("=?utf-8?B??=")).to eq ""
     end
@@ -309,6 +315,12 @@ describe Mail::Encodings do
     it "should decode a string with spaces" do
       expect(Mail::Encodings.value_decode("=?utf-8?Q?a a?=")).to eq "a a"
     end
+
+    it "should treat unrecognized charsets as binary" do
+      if RUBY_VERSION >= "1.9"
+        expect(Mail::Encodings.value_decode("=?ISO-FOOO?Q?Morten_R=F8verdatt=E9r?=")).to eq "Morten Rverdattr"
+      end
+    end
   end
 
   describe "mixed Q and B encodings" do
@@ -408,7 +420,6 @@ describe Mail::Encodings do
         expect(Mail::Encodings.param_encode(string)).to eq 'fun'
       end
     end
-
   end
 
   describe "decoding a string and detecting the encoding type" do
@@ -845,11 +856,72 @@ describe Mail::Encodings do
       end
     end
 
+    it "uses converter for params" do
+      if RUBY_VERSION > "1.9"
+        with_encoder CustomEncoder.new do
+          result = Mail::Encodings.param_decode("'ja'%d0%91%d0%b5%d0%b7%d1%8b%d0%bc%d1%8f%d0%bd%d0%bd%d1%8b%d0%b912.png", 'iso-2022-jp')
+          expect(result).to eq "'ja'Безымянный12.png-iso-2022-jp"
+        end
+      end
+    end
+
     it "can convert ansi with best effort" do
       if RUBY_VERSION > "1.9"
         with_encoder Mail::Ruby19::BestEffortCharsetEncoder.new do
           expect(Mail::Encodings.value_decode("=?windows-1258?Q?SV=3A_Spr=F8sm=E5l_om_tilbod?=")).to eq "SV: Sprøsmål om tilbod"
         end
+      end
+    end
+  end
+
+  describe ".collapse_adjacent_encodings" do
+    def convert(from, to)
+      expect(Mail::Encodings.collapse_adjacent_encodings(from)).to eq to
+    end
+
+    it "leaves blank intact" do
+      convert "    ", ["    "]
+    end
+
+    it "leaves pure unencoded intact" do
+      convert "AB CD EF ?= =? G", ["AB CD EF ?= =? G"]
+    end
+
+    it "does not modify 1 encoded" do
+      convert "=?iso-2022-jp?B?X=?=", ["=?iso-2022-jp?B?X=?="]
+    end
+
+    it "splits unencoded and encoded into separate parts" do
+      convert "A=?iso-2022-jp?B?X=?=B", ["A", "=?iso-2022-jp?B?X=?=", "B"]
+    end
+
+    it "joins adjacent encodings" do
+      convert "A=?iso-2022-jp?B?X=?==?iso-2022-jp?B?Y=?=B", ["A", "=?iso-2022-jp?B?X=?==?iso-2022-jp?B?Y=?=", "B"]
+    end
+
+    it "joins adjacent encodings without unencoded" do
+      convert "=?iso-2022-jp?B?X=?==?iso-2022-jp?B?Y=?=", ["=?iso-2022-jp?B?X=?==?iso-2022-jp?B?Y=?="]
+    end
+
+    it "does not join encodings when separated by unencoded" do
+      convert "A=?iso-2022-jp?B?X=?=B=?iso-2022-jp?B?Y=?=C", ["A", "=?iso-2022-jp?B?X=?=", "B", "=?iso-2022-jp?B?Y=?=", "C"]
+    end
+
+    it "does not join different encodings" do
+      convert "A=?iso-2022-jp?B?X=?==?utf-8?B?Y=?=B", ["A", "=?iso-2022-jp?B?X=?=", "=?utf-8?B?Y=?=", "B"]
+    end
+  end
+
+  describe ".pick_encoding" do
+    it "finds encoding" do
+      if RUBY_VERSION >= "1.9"
+        expect(Mail::Ruby19.pick_encoding("Windows-1252")).to eq Encoding::Windows_1252
+      end
+    end
+
+    it "uses binary for unfound" do
+      if RUBY_VERSION >= "1.9"
+        expect(Mail::Ruby19.pick_encoding("ISO-Foo")).to eq Encoding::BINARY
       end
     end
   end

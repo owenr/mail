@@ -110,6 +110,8 @@ the gem gets released.
 
 It also means you can be sure Mail will behave correctly.
 
+Note: If you care about core extensions (aka "monkey-patching"), please read the Core Extensions section near the end of this README.
+
 API Policy
 ----------
 
@@ -588,7 +590,7 @@ Mail::TestMailer.deliveries.clear
 => []
 ```
 
-There is also a set of RSpec matchers stolen fr^H^H^H^H^H^H^H^H inspired by Shoulda's ActionMailer matchers (you'll want to set <code>delivery_method</code> as above too):
+There is also a set of RSpec matchers stolen/inspired by Shoulda's ActionMailer matchers (you'll want to set <code>delivery_method</code> as above too):
 
 ```ruby
 Mail.defaults do
@@ -634,8 +636,42 @@ describe "sending an email" do
   # Note that apart from recipients, repeating a modifier overwrites old value.
 
   it { should have_sent_email.from('you@you.com').to('mike1@me.com').matching_body(/hell/)
+
+  # test for attachments
+
+  # ... by specific attachment
+  it { should_have_sent_email.with_attachments(my_attachment) }
+
+  # ... or any attachment
+  it { should_have_sent_email.with_attachments(any_attachment) }
+
+  # ... by array of attachments
+  it { should_have_sent_email.with_attachments([my_attachment1, my_attachment2]) } #note that order is important
+
+  #... by presence
+  it { should_have_sent_email.with_any_attachments }
+
+  #... or by absence
+  it { should_have_sent_email.with_no_attachments }
+
 end
 ```
+
+Core Extensions
+---------------
+
+The mail gem adds several constants and methods to Ruby's core objects (similar to the activesupport gem from the Rails project).  For example:
+
+    NilClass::blank?
+    NilClass::to_crlf
+    NilClass::to_lf
+    Object::blank?
+    String::to_crlf
+    String::to_lf
+    String::blank?
+    ...etc...
+
+For all the details, check out lib/mail/core_extensions/.
 
 Excerpts from TREC Spam Corpus 2005
 -----------------------------------
@@ -661,7 +697,7 @@ License
 
 (The MIT License)
 
-Copyright (c) 2009-2013 Mikel Lindsaar
+Copyright (c) 2009-2015 Mikel Lindsaar
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

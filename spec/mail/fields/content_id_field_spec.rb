@@ -104,7 +104,7 @@ describe Mail::ContentIdField do
   describe "generating a content id" do
     it "should generate a content ID if it has no value" do
       m = Mail::ContentIdField.new
-      expect(m.content_id).not_to be_blank
+      expect(Mail::Utilities.blank?(m.content_id)).not_to be_truthy
     end
     
     it "should generate a random content ID" do

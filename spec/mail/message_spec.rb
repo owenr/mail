@@ -16,13 +16,13 @@ describe Mail::Message do
     it "should return a basic email" do
       mail = Mail.new
       mail = Mail.new(mail.to_s)
-      expect(mail.date).not_to be_blank
-      expect(mail.message_id).not_to be_blank
+      expect(Mail::Utilities.blank?(mail.date)).not_to be_truthy
+      expect(Mail::Utilities.blank?(mail.message_id)).not_to be_truthy
       expect(mail.mime_version).to eq "1.0"
       expect(mail.content_type).to eq "text/plain"
       expect(mail.content_transfer_encoding).to eq "7bit"
-      expect(mail.subject).to be_blank
-      expect(mail.body).to be_blank
+      expect(Mail::Utilities.blank?(mail.subject)).to be_truthy
+      expect(Mail::Utilities.blank?(mail.body)).to be_truthy
     end
 
     it "should instantiate with a string" do
@@ -135,7 +135,7 @@ describe Mail::Message do
 
     it "should be able to pass an empty reply-to header" do
       mail = Mail.read(fixture('emails', 'error_emails', 'empty_in_reply_to.eml'))
-      expect(mail.in_reply_to).to be_blank
+      expect(Mail::Utilities.blank?(mail.in_reply_to)).to be_truthy
     end
 
     describe "YAML serialization" do
@@ -164,7 +164,7 @@ describe Mail::Message do
         expect(yaml_output['headers']['Subject']).to  eq "subject"
         expect(yaml_output['headers']['Bcc']).to      eq "someonesecret@somewhere.com"
         expect(yaml_output['@body_raw']).to           eq "body"
-        expect(yaml_output['@delivery_method']).not_to be_blank
+        expect(Mail::Utilities.blank?(yaml_output['@delivery_method'])).not_to be_truthy
       end
 
       it "should deserialize after serializing" do
@@ -358,6 +358,23 @@ describe Mail::Message do
       expect(mail.to).to eq ["raasdnil@gmail.com"]
       expect(mail.decoded).to eq "すみません。\n\n"
       expect(raw_message.encoding).to eq original_encoding if raw_message.respond_to?(:encoding)
+    end
+
+    it "should parse sources with charsets that we know but Ruby doesn't" do
+      raw_message = File.read(fixture('emails', 'multi_charset', 'ks_c_5601-1987.eml'))
+      original_encoding = raw_message.encoding if raw_message.respond_to?(:encoding)
+      mail = Mail.new(raw_message)
+      expect(mail.decoded).to eq "스티해\n"
+      expect(raw_message.encoding).to eq original_encoding if raw_message.respond_to?(:encoding)
+    end
+
+    if '1.9+'.respond_to?(:encoding)
+      it "should be able to normalize CRLFs on non-UTF8 encodings" do
+        File.open(fixture('emails', 'multi_charset', 'japanese_shift_jis.eml')) do |io|
+          mail = Mail.new(io.read)
+          expect(mail.raw_source.encoding).to eq Encoding::BINARY
+        end
+      end
     end
 
     if '1.9+'.respond_to?(:encoding)
@@ -1290,6 +1307,14 @@ describe Mail::Message do
           mail.to_s =~ %r{Content-Type: text/plain;\r\n}
         end
 
+        it "should not set the charset if the content_type is not text" do
+          body = "This is NOT plain text ASCII　− かきくけこ"
+          mail = Mail.new
+          mail.body = body
+          mail.content_type = "image/png"
+          mail.to_s.should_not =~ %r{Content-Type: image/png;\s+charset=UTF-8}
+        end
+
         it "should raise a warning if there is no content type and there is non ascii chars and default to text/plain, UTF-8" do
           body = "This is NOT plain text ASCII　− かきくけこ"
           mail = Mail.new
@@ -1307,6 +1332,16 @@ describe Mail::Message do
           mail.content_transfer_encoding = "8bit"
           expect(STDERR).to receive(:puts).with(/Non US-ASCII detected and no charset defined.\nDefaulting to UTF-8, set your own if this is incorrect./m)
           mail.to_s =~ %r{Content-Type: text/plain; charset=UTF-8}
+        end
+
+        it "should not raise a warning if there is no charset parameter and the content-type is not text" do
+          body = "This is NOT plain text ASCII　− かきくけこ"
+          mail = Mail.new
+          mail.body = body
+          mail.content_type = "image/png"
+          mail.content_transfer_encoding = "8bit"
+          STDERR.should_not_receive(:puts)
+          mail.to_s
         end
 
         it "should not raise a warning if there is a charset defined and there is non ascii chars" do
@@ -1347,6 +1382,14 @@ describe Mail::Message do
           mail = Mail.new
           mail.body = body
           expect(mail.to_s).to match(%r{Content-Transfer-Encoding: 7bit})
+        end
+
+        it "should use QP transfer encoding for 7bit text with lines longer than 998 octets" do
+          body = "a" * 999
+          mail = Mail.new
+          mail.charset = "UTF-8"
+          mail.body = body
+          expect(mail.to_s).to match(%r{Content-Transfer-Encoding: quoted-printable})
         end
 
         it "should use QP transfer encoding for 8bit text with only a few 8bit characters" do
@@ -1471,18 +1514,33 @@ describe Mail::Message do
       "Am=E9rica"
     end
 
-    before(:each) do
-      @message = Mail.new(message_with_iso_8859_1_charset)
+    def with_encoder(encoder)
+      old, Mail::Ruby19.charset_encoder = Mail::Ruby19.charset_encoder, encoder
+      yield
+    ensure
+      Mail::Ruby19.charset_encoder = old
     end
 
+    let(:message){
+      Mail.new(message_with_iso_8859_1_charset)
+    }
+
     it "should be decoded using content type charset" do
-      expect(@message.decoded).to eq "América"
+      expect(message.decoded).to eq "América"
     end
 
     it "should respond true to text?" do
-      expect(@message.text?).to eq true
+      expect(message.text?).to eq true
     end
 
+    if RUBY_VERSION > "1.9"
+      it "uses the Ruby19 charset encoder" do
+        with_encoder(Mail::Ruby19::BestEffortCharsetEncoder.new) do
+          message = Mail.new("Content-Type: text/plain;\r\n charset=windows-1258\r\nContent-Transfer-Encoding: base64\r\n\r\nSGkglg==\r\n")
+          expect(message.decoded).to eq("Hi –")
+        end
+      end
+    end
   end
 
   describe "helper methods" do
@@ -1746,7 +1804,7 @@ describe Mail::Message do
   describe "error handling" do
     it "should collect up any of its fields' errors" do
       mail = Mail.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b\r\n")
-      expect(mail.errors).not_to be_blank
+      expect(Mail::Utilities.blank?(mail.errors)).not_to be_truthy
       expect(mail.errors.size).to eq 2
       expect(mail.errors[0][0]).to eq 'Reply-To'
       expect(mail.errors[0][1]).to eq 'a b b'
